@@ -1,5 +1,5 @@
 import {PropTypes} from 'react';
-import {omit} from 'lodash';
+import {omit, has} from 'lodash';
 
 import createConnector from '../core/createConnector';
 
@@ -7,9 +7,15 @@ function getId() {
   return 'sortBy';
 }
 
-function getCurrentRefinement(props, searchState) {
+function getIndex(context) {
+  return context && context.multiIndexContext ? context.multiIndexContext.targettedIndex : undefined;
+}
+
+function getCurrentRefinement(props, searchState, index) {
   const id = getId();
-  if (searchState[id]) {
+  if (has(searchState, `indices.${index}.${id}`)) {
+    return searchState.indices[index][id];
+  } else if (!index && searchState[id]) {
     return searchState[id];
   }
   if (props.defaultRefinement) {
@@ -44,7 +50,7 @@ export default createConnector({
   },
 
   getProvidedProps(props, searchState) {
-    const currentRefinement = getCurrentRefinement(props, searchState);
+    const currentRefinement = getCurrentRefinement(props, searchState, getIndex(this.context));
     const items = props.items.map(item => item.value === currentRefinement
       ? {...item, isRefined: true} : {...item, isRefined: false});
     return {
@@ -55,18 +61,27 @@ export default createConnector({
 
   refine(props, searchState, nextRefinement) {
     const id = getId();
-    return {
+    const sortByState = this.context.multiIndexContext ?
+      {indices: {[this.context.multiIndexContext.targettedIndex]: {[id]: nextRefinement}}}
+      : {[id]: nextRefinement};
+    const state = {
       ...searchState,
-      [id]: nextRefinement,
+      ...sortByState,
     };
+    return state;
   },
 
   cleanUp(props, searchState) {
-    return omit(searchState, getId());
+    if (this.context.multiIndexContext && searchState.indices) {
+      const index = this.context.multiIndexContext.targettedIndex;
+      return {...searchState, ...{indices: {[index]: omit(searchState.indices[index], getId())}}};
+    } else {
+      return omit(searchState, getId());
+    }
   },
 
   getSearchParameters(searchParameters, props, searchState) {
-    const selectedIndex = getCurrentRefinement(props, searchState);
+    const selectedIndex = getCurrentRefinement(props, searchState, getIndex(this.context));
     return searchParameters.setIndex(selectedIndex);
   },
 

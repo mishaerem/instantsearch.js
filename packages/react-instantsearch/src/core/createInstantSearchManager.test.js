@@ -24,7 +24,7 @@ const defaultResponse = {
 };
 const client = makeClient(defaultResponse);
 
-describe('createInstantSearchManager', () => {
+describe.skip('createInstantSearchManager', () => {
   it('initializes the manager with an empty state', () => {
     const ism = createInstantSearchManager({
       indexName: 'index',

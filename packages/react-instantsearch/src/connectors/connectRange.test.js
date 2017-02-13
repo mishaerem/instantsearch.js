@@ -6,12 +6,14 @@ import connect from './connectRange';
 jest.mock('../core/createConnector');
 
 const {
-  getProvidedProps,
   refine,
   getSearchParameters: getSP,
   getMetadata,
   cleanUp,
 } = connect;
+
+const context = {context: {multiIndexContext: {targettedIndex: 'index'}}};
+const getProvidedProps = connect.getProvidedProps.bind(context);
 
 let props;
 let params;
@@ -27,11 +29,11 @@ describe('connectRange', () => {
       canRefine: false,
     });
 
-    const results = {
+    const results = {index: {
       getFacetStats: () => ({min: 5, max: 10}),
       getFacetValues: () => [{name: '5', count: 10}, {name: '2', count: 20}],
       getFacetByName: () => true,
-    };
+    }};
     props = getProvidedProps({attributeName: 'ok'}, {}, {results});
     expect(props).toEqual({
       min: 5,

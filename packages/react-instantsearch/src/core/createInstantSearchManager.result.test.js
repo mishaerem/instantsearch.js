@@ -34,7 +34,7 @@ client.search = jest.fn((queries, cb) => {
   });
 });
 
-describe('createInstantSearchManager', () => {
+describe.skip('createInstantSearchManager', () => {
   describe('with correct result from algolia', () => {
     describe('on widget lifecycle', () => {
       it('updates the store and searches', () => {

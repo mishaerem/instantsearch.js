@@ -50,7 +50,7 @@ exports[`Pagination allows toggling display of the first page button on and off 
     disabled={undefined}>
     <a
       aria-label="Page 9"
-      className="ais-Pagination__itemLink"
+      className="ais-Pagination__itemLink ais-Pagination__itemLinkSelected"
       href="#"
       onClick={[Function]}>
       9
@@ -155,7 +155,7 @@ exports[`Pagination allows toggling display of the first page button on and off 
     disabled={undefined}>
     <a
       aria-label="Page 9"
-      className="ais-Pagination__itemLink"
+      className="ais-Pagination__itemLink ais-Pagination__itemLinkSelected"
       href="#"
       onClick={[Function]}>
       9
@@ -271,7 +271,7 @@ exports[`Pagination allows toggling display of the last page button on and off 1
     disabled={undefined}>
     <a
       aria-label="Page 9"
-      className="ais-Pagination__itemLink"
+      className="ais-Pagination__itemLink ais-Pagination__itemLinkSelected"
       href="#"
       onClick={[Function]}>
       9
@@ -398,7 +398,7 @@ exports[`Pagination allows toggling display of the last page button on and off 2
     disabled={undefined}>
     <a
       aria-label="Page 9"
-      className="ais-Pagination__itemLink"
+      className="ais-Pagination__itemLink ais-Pagination__itemLinkSelected"
       href="#"
       onClick={[Function]}>
       9
@@ -514,7 +514,7 @@ exports[`Pagination allows toggling display of the next page button on and off 1
     disabled={undefined}>
     <a
       aria-label="Page 9"
-      className="ais-Pagination__itemLink"
+      className="ais-Pagination__itemLink ais-Pagination__itemLinkSelected"
       href="#"
       onClick={[Function]}>
       9
@@ -630,7 +630,7 @@ exports[`Pagination allows toggling display of the next page button on and off 2
     disabled={undefined}>
     <a
       aria-label="Page 9"
-      className="ais-Pagination__itemLink"
+      className="ais-Pagination__itemLink ais-Pagination__itemLinkSelected"
       href="#"
       onClick={[Function]}>
       9
@@ -735,7 +735,7 @@ exports[`Pagination allows toggling display of the previous page button on and o
     disabled={undefined}>
     <a
       aria-label="Page 9"
-      className="ais-Pagination__itemLink"
+      className="ais-Pagination__itemLink ais-Pagination__itemLinkSelected"
       href="#"
       onClick={[Function]}>
       9
@@ -840,7 +840,7 @@ exports[`Pagination allows toggling display of the previous page button on and o
     disabled={undefined}>
     <a
       aria-label="Page 9"
-      className="ais-Pagination__itemLink"
+      className="ais-Pagination__itemLink ais-Pagination__itemLinkSelected"
       href="#"
       onClick={[Function]}>
       9
@@ -956,7 +956,7 @@ exports[`Pagination applies its default props 1`] = `
     disabled={undefined}>
     <a
       aria-label="Page 9"
-      className="ais-Pagination__itemLink"
+      className="ais-Pagination__itemLink ais-Pagination__itemLinkSelected"
       href="#"
       onClick={[Function]}>
       9
@@ -1281,7 +1281,7 @@ exports[`Pagination displays the correct padding of links 2`] = `
     disabled={undefined}>
     <a
       aria-label="Page 9"
-      className="ais-Pagination__itemLink"
+      className="ais-Pagination__itemLink ais-Pagination__itemLinkSelected"
       href="#"
       onClick={[Function]}>
       9
@@ -1441,7 +1441,7 @@ exports[`Pagination displays the correct padding of links 3`] = `
     disabled={undefined}>
     <a
       aria-label="Page 19"
-      className="ais-Pagination__itemLink"
+      className="ais-Pagination__itemLink ais-Pagination__itemLinkSelected"
       href="#"
       onClick={[Function]}>
       19
@@ -1524,7 +1524,7 @@ exports[`Pagination displays the correct padding of links 4`] = `
     disabled={undefined}>
     <a
       aria-label="Page 3"
-      className="ais-Pagination__itemLink"
+      className="ais-Pagination__itemLink ais-Pagination__itemLinkSelected"
       href="#"
       onClick={[Function]}>
       3
@@ -1590,7 +1590,7 @@ exports[`Pagination indicates when first button is relevant 1`] = `
     disabled={undefined}>
     <a
       aria-label="Page 1"
-      className="ais-Pagination__itemLink"
+      className="ais-Pagination__itemLink ais-Pagination__itemLinkSelected"
       href="#"
       onClick={[Function]}>
       1
@@ -1772,7 +1772,7 @@ exports[`Pagination indicates when first button is relevant 2`] = `
     disabled={undefined}>
     <a
       aria-label="Page 20"
-      className="ais-Pagination__itemLink"
+      className="ais-Pagination__itemLink ais-Pagination__itemLinkSelected"
       href="#"
       onClick={[Function]}>
       20
@@ -1893,7 +1893,7 @@ exports[`Pagination lets you customize its theme 1`] = `
     disabled={undefined}>
     <a
       aria-label="Page 8"
-      className="ais-Pagination__itemLink"
+      className="ais-Pagination__itemLink ais-Pagination__itemLinkSelected"
       href="#"
       onClick={[Function]}>
       8
@@ -2042,7 +2042,7 @@ exports[`Pagination lets you customize its translations 1`] = `
     disabled={undefined}>
     <a
       aria-label="ARIA_PAGE_9"
-      className="ais-Pagination__itemLink"
+      className="ais-Pagination__itemLink ais-Pagination__itemLinkSelected"
       href="#"
       onClick={[Function]}>
       PAGE_9
@@ -2180,7 +2180,7 @@ exports[`Pagination lets you force a maximum of pages 1`] = `
     disabled={undefined}>
     <a
       aria-label="Page 9"
-      className="ais-Pagination__itemLink"
+      className="ais-Pagination__itemLink ais-Pagination__itemLinkSelected"
       href="#"
       onClick={[Function]}>
       9
@@ -2307,7 +2307,7 @@ exports[`Pagination lets you force a maximum of pages 2`] = `
     disabled={undefined}>
     <a
       aria-label="Page 8"
-      className="ais-Pagination__itemLink"
+      className="ais-Pagination__itemLink ais-Pagination__itemLinkSelected"
       href="#"
       onClick={[Function]}>
       8

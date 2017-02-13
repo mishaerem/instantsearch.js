@@ -5,22 +5,21 @@ import {SearchParameters} from 'algoliasearch-helper';
 import connect from './connectMultiRange';
 jest.mock('../core/createConnector');
 
-const {
-  getProvidedProps,
-  refine,
-  getSearchParameters: getSP,
-  getMetadata,
-  cleanUp,
-} = connect;
+const context = {context: {ais: {mainTargettedIndex: 'index'}}};
+const getProvidedProps = connect.getProvidedProps.bind(context);
+const refine = connect.refine.bind(context);
+const getSP = connect.getSearchParameters.bind(context);
+const getMetadata = connect.getMetadata.bind(context);
+const cleanUp = connect.cleanUp.bind(context);
 
 let props;
 let params;
 
 describe('connectMultiRange', () => {
-  const results = {
+  const results = {index: {
     getFacetStats: () => ({min: 0, max: 300}),
     getFacetByName: () => true,
-  };
+  }};
 
   it('provides the correct props to the component', () => {
     props = getProvidedProps({

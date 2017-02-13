@@ -3,7 +3,10 @@
 import connect from './connectCurrentRefinements.js';
 jest.mock('../core/createConnector');
 
-const {refine, getProvidedProps} = connect;
+const {refine} = connect;
+
+const context = {context: {multiIndexContext: {targettedIndex: 'index'}}};
+const getProvidedProps = connect.getProvidedProps.bind(context);
 
 describe('connectCurrentRefinements', () => {
   it('provides the correct props to the component', () => {

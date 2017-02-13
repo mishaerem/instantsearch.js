@@ -273,8 +273,7 @@ describe('Pagination', () => {
         .simulate('click');
     expect(refine.mock.calls.length).toBe(2);
     const parameters = refine.mock.calls[1][0];
-    expect(parameters.valueOf()).toBe(9);
-    expect(parameters.isSamePage).toBe(true);
+    expect(parameters.valueOf()).toBe(1);
     wrapper
         .find('.ais-Pagination__itemPrevious')
         .find('.ais-Pagination__itemLink')

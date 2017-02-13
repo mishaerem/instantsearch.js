@@ -17,7 +17,8 @@ export default createConnector({
   displayName: 'AlgoliaInfiniteHits',
 
   getProvidedProps(props, searchState, searchResults) {
-    if (!searchResults.results) {
+    const index = this.context.multiIndexContext ? this.context.multiIndexContext.targettedIndex : this.context.ais.mainTargettedIndex;
+    if (!searchResults.results || !searchResults.results[index]) {
       this._allResults = [];
       return {
         hits: this._allResults,
@@ -25,7 +26,7 @@ export default createConnector({
       };
     }
 
-    const {hits, page, nbPages, hitsPerPage} = searchResults.results;
+    const {hits, page, nbPages, hitsPerPage} = searchResults.results[index];
 
     if (page === 0) {
       this._allResults = hits;

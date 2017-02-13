@@ -5,13 +5,12 @@ import {SearchParameters} from 'algoliasearch-helper';
 import connect from './connectHitsPerPage';
 jest.mock('../core/createConnector');
 
-const {
-  getProvidedProps,
-  refine,
-  getSearchParameters: getSP,
-  getMetadata,
-  cleanUp,
-} = connect;
+const context = {context: {ais: {mainTargettedIndex: 'index'}}};
+const getProvidedProps = connect.getProvidedProps.bind(context);
+const refine = connect.refine.bind(context);
+const getSP = connect.getSearchParameters.bind(context);
+const getMetadata = connect.getMetadata.bind(context);
+const cleanUp = connect.cleanUp.bind(context);
 
 let props;
 let params;
@@ -71,7 +70,7 @@ describe('connectHitsPerPage', () => {
 
   it('should return the right searchState when clean up', () => {
     const searchState = cleanUp({}, {
-      hitsPerPage: {searchState: 'searchState'},
+      hitsPerPage: 'searchState',
       another: {searchState: 'searchState'},
     });
     expect(searchState).toEqual({another: {searchState: 'searchState'}});

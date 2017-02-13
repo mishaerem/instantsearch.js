@@ -5,13 +5,12 @@ import {SearchParameters} from 'algoliasearch-helper';
 import connect from './connectSortBy';
 jest.mock('../core/createConnector');
 
-const {
-  getProvidedProps,
-  refine,
-  getSearchParameters: getSP,
-  getMetadata,
-  cleanUp,
-} = connect;
+const context = {context: {ais: {mainTargettedIndex: 'index'}}};
+const getProvidedProps = connect.getProvidedProps.bind(context);
+const refine = connect.refine.bind(context);
+const getSP = connect.getSearchParameters.bind(context);
+const getMetadata = connect.getMetadata.bind(context);
+const cleanUp = connect.cleanUp.bind(context);
 
 let props;
 let params;

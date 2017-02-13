@@ -1,21 +1,33 @@
 import {PropTypes} from 'react';
-import {omit, isEmpty, orderBy} from 'lodash';
+import {omit, isEmpty, orderBy, has} from 'lodash';
 
 import createConnector from '../core/createConnector';
+
+const namespace = 'menu';
 
 function getId(props) {
   return props.attributeName;
 }
 
-const namespace = 'menu';
+function getIndex(context) {
+  return context && context.multiIndexContext ? context.multiIndexContext.targettedIndex : context.ais.mainTargettedIndex;
+}
 
-function getCurrentRefinement(props, searchState) {
+function hasMultipleIndex(context) {
+  return context && context.multiIndexContext;
+}
+
+function getCurrentRefinement(props, searchState, context) {
   const id = getId(props);
-  if (searchState[namespace] && typeof searchState[namespace][id] !== 'undefined') {
-    if (searchState[namespace][id] === '') {
+  const index = getIndex(context);
+  const refinements = hasMultipleIndex(context) && has(searchState, `indices.${index}.${namespace}.${id}`)
+    || !hasMultipleIndex(context) && has(searchState, `${namespace}.${id}`);
+  if (refinements) {
+    const subState = hasMultipleIndex(context) ? searchState.indices[index][namespace] : searchState[namespace];
+    if (subState[id] === '') {
       return null;
     }
-    return searchState[namespace][id];
+    return subState[id];
   }
   if (props.defaultRefinement) {
     return props.defaultRefinement;
@@ -23,9 +35,33 @@ function getCurrentRefinement(props, searchState) {
   return null;
 }
 
-function getValue(name, props, searchState) {
-  const currentRefinement = getCurrentRefinement(props, searchState);
+function getValue(name, props, searchState, context) {
+  const currentRefinement = getCurrentRefinement(props, searchState, context);
   return name === currentRefinement ? '' : name;
+}
+
+function refine(props, searchState, nextRefinement, context) {
+  const id = getId(props);
+  const nextValue = {[id]: nextRefinement ? nextRefinement : ''};
+  const index = getIndex(context);
+  if (hasMultipleIndex(context)) {
+    const state = has(searchState, `indices.${index}`)
+      ? {...searchState.indices, [index]: {[namespace]: {...searchState.indices[index][namespace], ...nextValue}}}
+      : {...searchState.indices, ...{[index]: {[namespace]: nextValue}}};
+    return {...searchState, indices: state};
+  } else {
+    return {...searchState, [namespace]: {...searchState[namespace], ...nextValue}};
+  }
+}
+
+function cleanUp(props, searchState, context) {
+  const index = getIndex(context);
+  const prefix = hasMultipleIndex(context) && searchState.indices ? `indices.${index}.${namespace}` : namespace;
+  const cleanState = omit(searchState, `${prefix}.${getId(props)}`);
+  if (isEmpty(cleanState[namespace])) {
+    return omit(cleanState, namespace);
+  }
+  return cleanState;
 }
 
 const sortBy = ['count:desc', 'name:asc'];
@@ -72,9 +108,12 @@ export default createConnector({
     const {results} = searchResults;
     const {attributeName, showMore, limitMin, limitMax} = props;
     const limit = showMore ? limitMax : limitMin;
+    const index = getIndex(this.context);
+
     const canRefine =
       Boolean(results) &&
-      Boolean(results.getFacetByName(attributeName));
+      Boolean(results[index]) &&
+      Boolean(results[index].getFacetByName(attributeName));
 
     const isFromSearch = Boolean(searchForFacetValuesResults
       && searchForFacetValuesResults[attributeName]
@@ -89,7 +128,7 @@ export default createConnector({
     if (!canRefine) {
       return {
         items: [],
-        currentRefinement: getCurrentRefinement(props, searchState),
+        currentRefinement: getCurrentRefinement(props, searchState, this.context),
         isFromSearch,
         withSearchBox,
         canRefine,
@@ -101,16 +140,16 @@ export default createConnector({
         .map(
           v => ({
             label: v.value,
-            value: getValue(v.value, props, searchState),
+            value: getValue(v.value, props, searchState, this.context),
             _highlightResult: {label: {value: v.highlighted}},
             count: v.count,
             isRefined: v.isRefined,
           }))
-      : results
+      : results[index]
         .getFacetValues(attributeName, {sortBy})
         .map(v => ({
           label: v.name,
-          value: getValue(v.name, props, searchState),
+          value: getValue(v.name, props, searchState, this.context),
           count: v.count,
           isRefined: v.isRefined,
         }));
@@ -120,7 +159,7 @@ export default createConnector({
     const transformedItems = props.transformItems ? props.transformItems(sortedItems) : sortedItems;
     return {
       items: transformedItems.slice(0, limit),
-      currentRefinement: getCurrentRefinement(props, searchState),
+      currentRefinement: getCurrentRefinement(props, searchState, this.context),
       isFromSearch,
       withSearchBox,
       canRefine: items.length > 0,
@@ -128,11 +167,7 @@ export default createConnector({
   },
 
   refine(props, searchState, nextRefinement) {
-    const id = getId(props);
-    return {
-      ...searchState,
-      [namespace]: {...searchState[namespace], [id]: nextRefinement ? nextRefinement : ''},
-    };
+    return refine(props, searchState, nextRefinement, this.context);
   },
 
   searchForFacetValues(props, searchState, nextRefinement) {
@@ -140,11 +175,7 @@ export default createConnector({
   },
 
   cleanUp(props, searchState) {
-    const cleanState = omit(searchState, `${namespace}.${getId(props)}`);
-    if (isEmpty(cleanState[namespace])) {
-      return omit(cleanState, namespace);
-    }
-    return cleanState;
+    return cleanUp(props, searchState, this.context);
   },
 
   getSearchParameters(searchParameters, props, searchState) {
@@ -160,7 +191,7 @@ export default createConnector({
 
     searchParameters = searchParameters.addDisjunctiveFacet(attributeName);
 
-    const currentRefinement = getCurrentRefinement(props, searchState);
+    const currentRefinement = getCurrentRefinement(props, searchState, this.context);
     if (currentRefinement !== null) {
       searchParameters = searchParameters.addDisjunctiveFacetRefinement(
         attributeName,
@@ -173,16 +204,13 @@ export default createConnector({
 
   getMetadata(props, searchState) {
     const id = getId(props);
-    const currentRefinement = getCurrentRefinement(props, searchState);
+    const currentRefinement = getCurrentRefinement(props, searchState, this.context);
     return {
       id,
       items: currentRefinement === null ? [] : [{
         label: `${props.attributeName}: ${currentRefinement}`,
         attributeName: props.attributeName,
-        value: nextState => ({
-          ...nextState,
-          [namespace]: {...nextState[namespace], [id]: ''},
-        }),
+        value: nextState => refine(props, nextState, '', this.context),
         currentRefinement,
       }],
     };

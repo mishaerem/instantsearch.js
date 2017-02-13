@@ -3,46 +3,47 @@
 import connect from './connectInfiniteHits.js';
 jest.mock('../core/createConnector');
 
+const context = {context: {multiIndexContext: {targettedIndex: 'index'}}};
+const getProvidedProps = connect.getProvidedProps.bind(context);
+
 describe('connectInfiniteHits', () => {
   it('provides the current hits to the component', () => {
-    const providedThis = {};
     const hits = [{}];
-    const props = connect.getProvidedProps.call(providedThis, null, null, {
-      results: {hits, page: 0, hitsPerPage: 2, nbPages: 3},
+    const props = getProvidedProps(null, null, {
+      results: {index: {hits, page: 0, hitsPerPage: 2, nbPages: 3}},
     });
     expect(props).toEqual({hits, hasMore: true});
   });
 
   it('accumulate hits internally', () => {
-    const providedThis = {};
     const hits = [{}, {}];
     const hits2 = [{}, {}];
-    const res1 = connect.getProvidedProps.call(providedThis, null, null, {
-      results: {hits, page: 0, hitsPerPage: 2, nbPages: 3},
+    const res1 = getProvidedProps(null, null, {
+      results: {index: {hits, page: 0, hitsPerPage: 2, nbPages: 3}},
     });
     expect(res1.hits).toEqual(hits);
     expect(res1.hasMore).toBe(true);
-    const res2 = connect.getProvidedProps.call(providedThis, null, null, {
-      results: {hits: hits2, page: 1, hitsPerPage: 2, nbPages: 3},
+    const res2 = getProvidedProps(null, null, {
+      results: {index: {hits: hits2, page: 1, hitsPerPage: 2, nbPages: 3}},
     });
     expect(res2.hits).toEqual([...hits, ...hits2]);
     expect(res2.hasMore).toBe(true);
   });
 
   it('should not reset while accumulating results', () => {
-    const providedThis = {};
     const nbPages = 100;
     let allHits = [];
 
     for (let page = 0; page < nbPages - 1; page++) {
       const hits = [{}, {}];
       allHits = [...allHits, ...hits];
-      const res = connect.getProvidedProps.call(providedThis, null, null, {
-        results: {
+      const res = getProvidedProps(null, null, {
+        results: {index: {
           hits,
           page,
           hitsPerPage: hits.length,
           nbPages,
+        },
         },
       });
       expect(res.hits).toEqual(allHits);
@@ -52,12 +53,13 @@ describe('connectInfiniteHits', () => {
 
     const hits = [{}, {}];
     allHits = [...allHits, ...hits];
-    const res = connect.getProvidedProps.call(providedThis, null, null, {
-      results: {
+    const res = getProvidedProps(null, null, {
+      results: {index: {
         hits,
         page: nbPages - 1,
         hitsPerPage: hits.length,
         nbPages,
+      },
       },
     });
     expect(res.hits.length).toEqual(nbPages * 2);
@@ -66,18 +68,17 @@ describe('connectInfiniteHits', () => {
   });
 
   it('Indicates the last page after several pages', () => {
-    const providedThis = {};
     const hits = [{}, {}];
     const hits2 = [{}, {}];
     const hits3 = [{}];
-    connect.getProvidedProps.call(providedThis, null, null, {
-      results: {hits, page: 0, hitsPerPage: 2, nbPages: 3},
+    getProvidedProps(null, null, {
+      results: {index: {hits, page: 0, hitsPerPage: 2, nbPages: 3}},
     });
-    connect.getProvidedProps.call(providedThis, null, null, {
-      results: {hits: hits2, page: 1, hitsPerPage: 2, nbPages: 3},
+    getProvidedProps(null, null, {
+      results: {index: {hits: hits2, page: 1, hitsPerPage: 2, nbPages: 3}},
     });
-    const props = connect.getProvidedProps.call(providedThis, null, null, {
-      results: {hits: hits3, page: 2, hitsPerPage: 2, nbPages: 3},
+    const props = getProvidedProps(null, null, {
+      results: {index: {hits: hits3, page: 2, hitsPerPage: 2, nbPages: 3}},
     });
     expect(props.hits).toEqual([...hits, ...hits2, ...hits3]);
     expect(props.hasMore).toBe(false);

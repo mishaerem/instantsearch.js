@@ -12,12 +12,13 @@ export default createConnector({
   displayName: 'AlgoliaStats',
 
   getProvidedProps(props, searchState, searchResults) {
-    if (!searchResults.results) {
+    const index = this.context.multiIndexContext ? this.context.multiIndexContext.targettedIndex : this.context.ais.mainTargettedIndex;
+    if (!searchResults.results || !searchResults.results[index]) {
       return null;
     }
     return {
-      nbHits: searchResults.results.nbHits,
-      processingTimeMS: searchResults.results.processingTimeMS,
+      nbHits: searchResults.results[index].nbHits,
+      processingTimeMS: searchResults.results[index].processingTimeMS,
     };
   },
 });

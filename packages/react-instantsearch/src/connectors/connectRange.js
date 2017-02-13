@@ -62,15 +62,17 @@ export default createConnector({
     const hasMin = typeof min !== 'undefined';
     const hasMax = typeof max !== 'undefined';
 
+    const index = this.context.multiIndexContext ? this.context.multiIndexContext.targettedIndex : this.context.ais.mainTargettedIndex;
+
     if (!hasMin || !hasMax) {
-      if (!searchResults.results) {
+      if (!searchResults.results || !searchResults.results[index]) {
         return {
           canRefine: false,
         };
       }
 
-      const stats = searchResults.results.getFacetByName(attributeName) ?
-        searchResults.results.getFacetStats(attributeName) : null;
+      const stats = searchResults.results[index].getFacetByName(attributeName) ?
+        searchResults.results[index].getFacetStats(attributeName) : null;
       if (!stats) {
         return {
           canRefine: false,
@@ -85,7 +87,7 @@ export default createConnector({
       }
     }
 
-    const count = searchResults.results ? searchResults.results
+    const count = searchResults.results && searchResults.results[index] ? searchResults.results[index]
       .getFacetValues(attributeName)
       .map(v => ({
         value: v.name,

@@ -20,10 +20,12 @@ export default createConnector({
   },
 
   getProvidedProps(props, searchState, searchResults, metadata) {
+    const index = this.context.multiIndexContext ? this.context.multiIndexContext.targettedIndex : this.context.ais.mainTargettedIndex;
     const items = metadata.reduce((res, meta) =>
         typeof meta.items !== 'undefined' ? res.concat(meta.items) : res
       , []);
-    const query = props.clearsQuery && searchResults.results ? searchResults.results.query : undefined;
+    const query = props.clearsQuery && searchResults.results && searchResults.results[index]
+      ? searchResults.results[index].query : undefined;
 
     return {
       items: props.transformItems ? props.transformItems(items) : items,

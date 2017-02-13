@@ -1,5 +1,5 @@
 import {PropTypes} from 'react';
-import {omit, isEmpty} from 'lodash';
+import {omit, isEmpty, has} from 'lodash';
 
 import createConnector from '../core/createConnector';
 
@@ -9,10 +9,21 @@ function getId(props) {
   return props.attributeName;
 }
 
-function getCurrentRefinement(props, searchState) {
+function getIndex(context) {
+  return context && context.multiIndexContext ? context.multiIndexContext.targettedIndex : context.ais.mainTargettedIndex;
+}
+
+function hasMultipleIndex(context) {
+  return context && context.multiIndexContext;
+}
+
+function getCurrentRefinement(props, searchState, context) {
   const id = getId(props);
-  if (searchState[namespace] && typeof searchState[namespace][id] !== 'undefined') {
-    const subState = searchState[namespace];
+  const index = getIndex(context);
+  const refinements = hasMultipleIndex(context) && has(searchState, `indices.${index}.${namespace}.${id}`)
+    || !hasMultipleIndex(context) && has(searchState, `${namespace}.${id}`);
+  if (refinements) {
+    const subState = hasMultipleIndex(context) ? searchState.indices[index][namespace] : searchState[namespace];
     if (typeof subState[id] === 'string') {
       // All items were unselected
       if (subState[id] === '') {
@@ -30,8 +41,8 @@ function getCurrentRefinement(props, searchState) {
   return [];
 }
 
-function getValue(name, props, searchState) {
-  const currentRefinement = getCurrentRefinement(props, searchState);
+function getValue(name, props, searchState, context) {
+  const currentRefinement = getCurrentRefinement(props, searchState, context);
   const isAnewValue = currentRefinement.indexOf(name) === -1;
   const nextRefinement = isAnewValue ?
     currentRefinement.concat([name]) : // cannot use .push(), it mutates
@@ -39,6 +50,36 @@ function getValue(name, props, searchState) {
   return nextRefinement;
 }
 
+function refine(props, searchState, nextRefinement, context) {
+  const id = getId(props);
+  // Setting the value to an empty string ensures that it is persisted in
+      // the URL as an empty value.
+      // This is necessary in the case where `defaultRefinement` contains one
+      // item and we try to deselect it. `nextSelected` would be an empty array,
+      // which would not be persisted to the URL.
+      // {foo: ['bar']} => "foo[0]=bar"
+      // {foo: []} => ""
+  const nextValue = {[id]: nextRefinement.length > 0 ? nextRefinement : ''};
+  const index = getIndex(context);
+  if (hasMultipleIndex(context)) {
+    const state = has(searchState, `indices.${index}`)
+        ? {...searchState.indices, [index]: {[namespace]: {...searchState.indices[index][namespace], ...nextValue}}}
+        : {...searchState.indices, ...{[index]: {[namespace]: nextValue}}};
+    return {...searchState, indices: state};
+  } else {
+    return {...searchState, [namespace]: {...searchState[namespace], ...nextValue}};
+  }
+}
+
+function cleanUp(props, searchState, context) {
+  const index = getIndex(context);
+  const prefix = hasMultipleIndex(context) && searchState.indices ? `indices.${index}.${namespace}` : namespace;
+  const cleanState = omit(searchState, `${prefix}.${getId(props)}`);
+  if (isEmpty(cleanState[namespace])) {
+    return omit(cleanState, namespace);
+  }
+  return cleanState;
+}
 /**
  * connectRefinementList connector provides the logic to build a widget that will
  * give the user tha ability to choose multiple values for a specific facet.
@@ -88,10 +129,12 @@ export default createConnector({
     const {results} = searchResults;
     const {attributeName, showMore, limitMin, limitMax} = props;
     const limit = showMore ? limitMax : limitMin;
+    const index = getIndex(this.context);
 
     const canRefine =
       Boolean(results) &&
-      Boolean(results.getFacetByName(attributeName));
+      Boolean(results[index]) &&
+      Boolean(results[index].getFacetByName(attributeName));
 
     const isFromSearch = Boolean(searchForFacetValuesResults
       && searchForFacetValuesResults[attributeName]
@@ -106,7 +149,7 @@ export default createConnector({
     if (!canRefine) {
       return {
         items: [],
-        currentRefinement: getCurrentRefinement(props, searchState),
+        currentRefinement: getCurrentRefinement(props, searchState, this.context),
         canRefine,
         isFromSearch,
         withSearchBox,
@@ -117,16 +160,16 @@ export default createConnector({
       ? searchForFacetValuesResults[attributeName]
         .map(v => ({
           label: v.value,
-          value: getValue(v.value, props, searchState),
+          value: getValue(v.value, props, searchState, this.context),
           _highlightResult: {label: {value: v.highlighted}},
           count: v.count,
           isRefined: v.isRefined,
         }))
-      : results
+      : results[index]
         .getFacetValues(attributeName, {sortBy})
         .map(v => ({
           label: v.name,
-          value: getValue(v.name, props, searchState),
+          value: getValue(v.name, props, searchState, this.context),
           count: v.count,
           isRefined: v.isRefined,
         }));
@@ -135,7 +178,7 @@ export default createConnector({
 
     return {
       items: transformedItems.slice(0, limit),
-      currentRefinement: getCurrentRefinement(props, searchState),
+      currentRefinement: getCurrentRefinement(props, searchState, this.context),
       isFromSearch,
       withSearchBox,
       canRefine: items.length > 0,
@@ -143,18 +186,7 @@ export default createConnector({
   },
 
   refine(props, searchState, nextRefinement) {
-    const id = getId(props);
-    return {
-      ...searchState,
-      // Setting the value to an empty string ensures that it is persisted in
-      // the URL as an empty value.
-      // This is necessary in the case where `defaultRefinement` contains one
-      // item and we try to deselect it. `nextSelected` would be an empty array,
-      // which would not be persisted to the URL.
-      // {foo: ['bar']} => "foo[0]=bar"
-      // {foo: []} => ""
-      [namespace]: {...searchState[namespace], [id]: nextRefinement.length > 0 ? nextRefinement : ''},
-    };
+    return refine(props, searchState, nextRefinement, this.context);
   },
 
   searchForFacetValues(props, searchState, nextRefinement) {
@@ -162,11 +194,7 @@ export default createConnector({
   },
 
   cleanUp(props, searchState) {
-    const cleanState = omit(searchState, `${namespace}.${getId(props)}`);
-    if (isEmpty(cleanState[namespace])) {
-      return omit(cleanState, namespace);
-    }
-    return cleanState;
+    return cleanUp(props, searchState, this.context);
   },
 
   getSearchParameters(searchParameters, props, searchState) {
@@ -186,34 +214,27 @@ export default createConnector({
 
     searchParameters = searchParameters[addKey](attributeName);
 
-    return getCurrentRefinement(props, searchState).reduce((res, val) =>
+    return getCurrentRefinement(props, searchState, this.context).reduce((res, val) =>
         res[addRefinementKey](attributeName, val)
       , searchParameters);
   },
 
   getMetadata(props, searchState) {
     const id = getId(props);
+    const context = this.context;
     return {
       id,
-      items: getCurrentRefinement(props, searchState).length > 0 ? [{
+      items: getCurrentRefinement(props, searchState, context).length > 0 ? [{
         attributeName: props.attributeName,
         label: `${props.attributeName}: `,
-        currentRefinement: getCurrentRefinement(props, searchState),
-        value: nextState => ({
-          ...nextState,
-          [namespace]: {...nextState[namespace], [id]: ''},
-        }),
-        items: getCurrentRefinement(props, searchState).map(item => ({
+        currentRefinement: getCurrentRefinement(props, searchState, context),
+        value: nextState => refine(props, nextState, [], context),
+        items: getCurrentRefinement(props, searchState, context).map(item => ({
           label: `${item}`,
           value: nextState => {
-            const nextSelectedItems = getCurrentRefinement(props, nextState).filter(
-                other => other !== item
-              );
-
-            return {
-              ...nextState,
-              [namespace]: {...nextState[namespace], [id]: nextSelectedItems.length > 0 ? nextSelectedItems : ''},
-            };
+            const nextSelectedItems = getCurrentRefinement(props, nextState, context)
+                                      .filter(other => other !== item);
+            return refine(props, searchState, nextSelectedItems, context);
           },
         })),
       }] : [],

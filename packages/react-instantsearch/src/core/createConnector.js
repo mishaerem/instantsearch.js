@@ -1,5 +1,5 @@
 import React, {PropTypes, Component} from 'react';
-import {has, isEqual} from 'lodash';
+import {has, isEqual, isEmpty} from 'lodash';
 
 import {shallowEqual, getDisplayName} from './utils';
 
@@ -52,12 +52,13 @@ export default function createConnector(connectorDesc) {
     static contextTypes = {
       // @TODO: more precise state manager propType
       ais: PropTypes.object.isRequired,
+      multiIndexContext: PropTypes.object,
     };
 
     constructor(props, context) {
       super(props, context);
 
-      const {ais: {store, widgetsManager}} = context;
+      const {ais: {store, widgetsManager}, multiIndexContext} = context;
       this.state = {
         props: this.getProvidedProps(props),
       };
@@ -70,14 +71,14 @@ export default function createConnector(connectorDesc) {
 
       const getSearchParameters = hasSearchParameters ?
         searchParameters =>
-          connectorDesc.getSearchParameters(
+          connectorDesc.getSearchParameters.call(this,
             searchParameters,
             this.props,
             store.getState().widgets
           ) :
         null;
       const getMetadata = hasMetadata ?
-        nextWidgetsState => connectorDesc.getMetadata(
+        nextWidgetsState => connectorDesc.getMetadata.call(this,
           this.props,
           nextWidgetsState
         ) :
@@ -91,7 +92,7 @@ export default function createConnector(connectorDesc) {
         null;
       if (isWidget) {
         this.unregisterWidget = widgetsManager.registerWidget({
-          getSearchParameters, getMetadata, transitionState,
+          getSearchParameters, getMetadata, transitionState, multiIndexContext,
         });
       }
     }
@@ -122,12 +123,22 @@ export default function createConnector(connectorDesc) {
       if (isWidget) {
         this.unregisterWidget();
         if (hasCleanUp) {
-          const newState = connectorDesc.cleanUp(this.props, this.context.ais.store.getState().widgets);
+          const newState = connectorDesc.cleanUp.call(this, this.props, this.context.ais.store.getState().widgets);
           this.context.ais.store.setState({
             ...this.context.ais.store.getState(),
             widgets: newState,
           });
-          this.context.ais.onInternalStateUpdate(newState);
+
+          // extract this + verify to simplify every clean up.
+          const removeEmpty = obj => {
+            Object.keys(obj).forEach(key =>
+              obj[key] && typeof obj[key] === 'object' && !isEmpty(obj[key]) && removeEmpty(obj[key]) ||
+              obj[key] === undefined || isEmpty(obj[key]) && delete obj[key]
+            );
+            return obj;
+          };
+
+          this.context.ais.onInternalStateUpdate(removeEmpty(newState));
         }
       }
     }
@@ -159,7 +170,7 @@ export default function createConnector(connectorDesc) {
 
     refine = (...args) => {
       this.context.ais.onInternalStateUpdate(
-        connectorDesc.refine(
+        connectorDesc.refine.call(this,
           this.props,
           this.context.ais.store.getState().widgets,
           ...args
@@ -179,14 +190,14 @@ export default function createConnector(connectorDesc) {
 
     createURL = (...args) =>
       this.context.ais.createHrefForState(
-        connectorDesc.refine(
+        connectorDesc.refine.call(this,
           this.props,
           this.context.ais.store.getState().widgets,
           ...args
         )
       );
 
-    cleanUp = (...args) => connectorDesc.cleanUp(...args);
+    cleanUp = (...args) => connectorDesc.cleanUp.call(this, ...args);
 
     render() {
       if (this.state.props === null) {

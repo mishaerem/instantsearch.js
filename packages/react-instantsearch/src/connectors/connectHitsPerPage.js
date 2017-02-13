@@ -1,18 +1,30 @@
 import {PropTypes} from 'react';
 import createConnector from '../core/createConnector';
-import {omit} from 'lodash';
+import {omit, has} from 'lodash';
 
 function getId() {
   return 'hitsPerPage';
 }
 
-function getCurrentRefinement(props, searchState) {
+function getIndex(context) {
+  return context && context.multiIndexContext ? context.multiIndexContext.targettedIndex : context.ais.mainTargettedIndex;
+}
+
+function hasMultipleIndex(context) {
+  return context && context.multiIndexContext;
+}
+
+function getCurrentRefinement(props, searchState, context) {
   const id = getId();
-  if (typeof searchState[id] !== 'undefined') {
-    if (typeof searchState[id] === 'string') {
-      return parseInt(searchState[id], 10);
+  const index = getIndex(context);
+  const refinements = hasMultipleIndex(context) && has(searchState, `indices.${index}.${id}`)
+    || !hasMultipleIndex(context) && has(searchState, id);
+  if (refinements) {
+    const subState = hasMultipleIndex(context) ? searchState.indices[index] : searchState;
+    if (typeof subState[id] === 'string') {
+      return parseInt(subState[id], 10);
     }
-    return searchState[id];
+    return subState[id];
   }
   return props.defaultRefinement;
 }
@@ -43,7 +55,7 @@ export default createConnector({
   },
 
   getProvidedProps(props, searchState) {
-    const currentRefinement = getCurrentRefinement(props, searchState);
+    const currentRefinement = getCurrentRefinement(props, searchState, this.context);
     const items = props.items.map(item => item.value === currentRefinement
       ? {...item, isRefined: true} : {...item, isRefined: false});
     return {
@@ -52,20 +64,30 @@ export default createConnector({
     };
   },
 
-  refine(props, searchState, nextHitsPerPage) {
+  refine(props, searchState, nextRefinement) {
     const id = getId();
-    return {
-      ...searchState,
-      [id]: nextHitsPerPage,
-    };
+    const nextValue = {[id]: nextRefinement};
+    const context = this.context;
+    const index = getIndex(context);
+    if (hasMultipleIndex(context)) {
+      const state = has(searchState, `indices.${index}`)
+        ? {...searchState.indices, [index]: {...searchState.indices[index], ...nextValue}}
+        : {...searchState.indices, ...{[index]: nextValue}};
+      return {...searchState, indices: state};
+    } else {
+      return {...searchState, ...nextValue};
+    }
   },
 
   cleanUp(props, searchState) {
-    return omit(searchState, getId());
+    const index = getIndex(this.context);
+    return hasMultipleIndex(this.context)
+      ? omit(searchState, `indices.${index}.${getId()}`)
+      : omit(searchState, getId());
   },
 
   getSearchParameters(searchParameters, props, searchState) {
-    return searchParameters.setHitsPerPage(getCurrentRefinement(props, searchState));
+    return searchParameters.setHitsPerPage(getCurrentRefinement(props, searchState, this.context));
   },
 
   getMetadata() {
